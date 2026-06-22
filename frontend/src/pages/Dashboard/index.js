@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 export default function Dashboard(){
   const user=JSON.parse(localStorage.getItem("user")||"{}");
-  return <div className="page fade">
+  return <div className="page fade" style={{maxWidth:"1400px",margin:"0 auto",padding:"40px 24px"}}>
     <div style={dashHero}>
       <div>
         <p style={eyebrow}>TRAVEL COMMAND CENTER</p>

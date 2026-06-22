@@ -22,7 +22,7 @@ export default function MyTrips(){
 
   if(loading)return <div className="loader">Loading trips...</div>;
 
-  return <div className="page fade">
+  return <div className="page fade" style={{maxWidth:"1400px",margin:"0 auto",padding:"40px 24px"}}>
     <div style={top}>
       <div><p style={eyebrow}>YOUR JOURNEYS</p><h1 style={heading}>My Trips ✈️</h1></div>
       <Link to="/create-trip"><button className="btn primary">+ Create Trip</button></Link>
