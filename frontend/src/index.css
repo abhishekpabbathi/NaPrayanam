@@ -1,13 +1,19 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:#f4f6f8;color:#0b0f19}
+a{text-decoration:none}
+button,input{font-family:inherit}
+.page{min-height:100vh;background:linear-gradient(180deg,#f7f9fb,#eef2f6);padding:40px 6%}
+.center{min-height:80vh;display:flex;align-items:center;justify-content:center}
+.card{background:rgba(255,255,255,.92);border:1px solid #e5e7eb;border-radius:28px;box-shadow:0 30px 80px rgba(15,23,42,.12)}
+.btn{border:0;border-radius:14px;padding:14px 22px;font-weight:800;cursor:pointer;transition:.25s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(37,99,235,.25)}
+.primary{background:#111827;color:white}
+.blue{background:#2563eb;color:white}
+.green{background:#16a34a;color:white}
+.danger{background:#dc2626;color:white}
+.input{width:100%;padding:15px 16px;border:1px solid #d8dee8;border-radius:16px;font-size:15px;outline:none;background:white}
+.input:focus{border-color:#111827;box-shadow:0 0 0 4px rgba(17,24,39,.08)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px}
+.loader{min-height:75vh;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900}
+.fade{animation:fade .5s ease}
+@keyframes fade{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
