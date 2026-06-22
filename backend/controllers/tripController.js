@@ -5,23 +5,105 @@ const generateMockTrip = ({ destination, days, budgetType, interests }) => {
     budgetType === "Low" ? 1000 :
     budgetType === "Medium" ? 2500 : 5000;
 
-  const itinerary = Array.from({ length: days }, (_, index) => ({
-    dayNumber: index + 1,
-    activities: [
-      {
-        title: `Explore ${destination}`,
-        description: `Visit places related to ${interests.join(", ") || "travel"}`,
-        timeOfDay: "Morning",
-        estimatedCost: baseCost,
-      },
-      {
-        title: "Local Food Experience",
-        description: "Try famous local food and markets",
-        timeOfDay: "Evening",
-        estimatedCost: Math.round(baseCost * 0.5),
-      },
-    ],
-  }));
+  const commonActivities = [
+    {
+      morning: "Explore Famous Local Landmarks",
+      morningCost: 2500,
+      evening: "Authentic Local Food Experience",
+      eveningCost: 1200,
+    },
+    {
+      morning: "Guided City Walking Tour",
+      morningCost: 1800,
+      evening: "Local Market & Shopping Visit",
+      eveningCost: 3000,
+    },
+    {
+      morning: "Historical & Cultural Attraction",
+      morningCost: 2200,
+      evening: "Sunset Viewpoint Experience",
+      eveningCost: 1000,
+    },
+    {
+      morning: "Nature & Scenic Exploration",
+      morningCost: 1500,
+      evening: "Street Food Discovery",
+      eveningCost: 900,
+    },
+    {
+      morning: "Museum & Heritage Visit",
+      morningCost: 2000,
+      evening: "Photography & Sightseeing Tour",
+      eveningCost: 1200,
+    },
+    {
+      morning: "Popular Tourist Attraction",
+      morningCost: 2800,
+      evening: "Local Cultural Event",
+      eveningCost: 1500,
+    },
+    {
+      morning: "Hidden Gems Exploration",
+      morningCost: 1700,
+      evening: "Evening City Walk",
+      eveningCost: 800,
+    },
+    {
+      morning: "Adventure Activity Experience",
+      morningCost: 3500,
+      evening: "Relaxation & Café Visit",
+      eveningCost: 1000,
+    },
+    {
+      morning: "Nearby Day Excursion",
+      morningCost: 4500,
+      evening: "Souvenir Shopping",
+      eveningCost: 1800,
+    },
+    {
+      morning: "Final Destination Highlights Tour",
+      morningCost: 2500,
+      evening: "Departure Preparation & Relaxation",
+      eveningCost: 700,
+    },
+  ];
+
+  const itinerary = Array.from({ length: days }, (_, index) => {
+    const activity =
+      commonActivities[index % commonActivities.length];
+
+    return {
+      dayNumber: index + 1,
+      activities: [
+        {
+          title: activity.morning,
+          description: `Discover important places and experiences in ${destination}`,
+          timeOfDay: "Morning",
+          estimatedCost: Math.round(
+            activity.morningCost *
+              (budgetType === "Low"
+                ? 0.7
+                : budgetType === "High"
+                ? 1.5
+                : 1)
+          ),
+        },
+        {
+          title: activity.evening,
+          description: `Enjoy local culture, food and entertainment in ${destination}`,
+          timeOfDay: "Evening",
+          estimatedCost: Math.round(
+            activity.eveningCost *
+              (budgetType === "Low"
+                ? 0.7
+                : budgetType === "High"
+                ? 1.5
+                : 1)
+          ),
+        },
+      ],
+    };
+  });
 
   return {
     itinerary,
@@ -64,8 +146,18 @@ const generateMockTrip = ({ destination, days, budgetType, interests }) => {
         isPacked: false,
       },
       {
-        item: "Shoes",
+        item: "Power Bank",
+        category: "Electronics",
+        isPacked: false,
+      },
+      {
+        item: "Comfortable Shoes",
         category: "Clothing",
+        isPacked: false,
+      },
+      {
+        item: "Water Bottle",
+        category: "Travel Essentials",
         isPacked: false,
       },
     ],
@@ -103,9 +195,9 @@ const createTrip = async (req, res) => {
 
 const getMyTrips = async (req, res) => {
   try {
-    const trips = await Trip.find({
-      user: req.user._id,
-    }).sort({ createdAt: -1 });
+    const trips = await Trip.find({ user: req.user._id }).sort({
+      createdAt: -1,
+    });
 
     res.json(trips);
   } catch (error) {
