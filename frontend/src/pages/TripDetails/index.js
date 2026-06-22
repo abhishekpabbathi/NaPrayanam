@@ -9,12 +9,18 @@ export default function TripDetails() {
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeDay, setActiveDay] = useState(1);
+  const [completed, setCompleted] = useState({});
 
   useEffect(() => {
     const fetchTrip = async () => {
       try {
         const res = await api.get(`/trips/${id}`);
         setTrip(res.data);
+
+        const saved = localStorage.getItem(`checklist-${id}`);
+        if (saved) {
+          setCompleted(JSON.parse(saved));
+        }
       } catch (err) {
         alert(err?.response?.data?.message || "Failed to fetch trip");
       }
@@ -23,6 +29,10 @@ export default function TripDetails() {
 
     fetchTrip();
   }, [id]);
+
+  useEffect(() => {
+    localStorage.setItem(`checklist-${id}`, JSON.stringify(completed));
+  }, [completed, id]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,14 +56,39 @@ export default function TripDetails() {
   }, [trip]);
 
   const scrollToDay = (dayNumber) => {
+    setActiveDay(dayNumber);
     const element = document.getElementById(`day-${dayNumber}`);
     if (element) {
-      element.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+      setTimeout(() => {
+        element.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 80);
     }
   };
+
+  const toggleActivity = (dayNumber, index) => {
+    const key = `${dayNumber}-${index}`;
+    setCompleted((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const totalActivities =
+    trip?.itinerary?.reduce(
+      (sum, day) => sum + (day.activities?.length || 0),
+      0
+    ) || 0;
+
+  const completedActivities =
+    Object.values(completed).filter(Boolean).length || 0;
+
+  const activityProgress =
+    totalActivities === 0
+      ? 0
+      : Math.round((completedActivities / totalActivities) * 100);
 
   const downloadPDF = async () => {
     const input = document.getElementById("trip-pdf");
@@ -103,7 +138,9 @@ export default function TripDetails() {
 
   const totalDays = trip.itinerary?.length || 1;
   const progressWidth =
-    totalDays <= 1 ? "100%" : `${((activeDay - 1) / (totalDays - 1)) * 100}%`;
+    totalDays <= 1
+      ? "100%"
+      : `${((activeDay - 1) / (totalDays - 1)) * 100}%`;
 
   return (
     <div style={page}>
@@ -128,20 +165,22 @@ export default function TripDetails() {
 
       <div style={progressWrapper}>
         <div style={progressHeader}>
-          <span>Trip Progress</span>
+          <span>Journey Scroll Progress</span>
           <strong>{Math.round((activeDay / totalDays) * 100)}%</strong>
         </div>
 
         <div style={progressTrack}>
           <div style={{ ...progressFill, width: progressWidth }}></div>
 
-          {trip.itinerary?.map((day) => (
+          {trip.itinerary?.map((day, index) => (
             <button
               key={day.dayNumber}
               onClick={() => scrollToDay(day.dayNumber)}
               style={{
                 ...dayDot,
-                ...(activeDay >= day.dayNumber ? activeDot : {}),
+                left: `${totalDays === 1 ? 0 : (index / (totalDays - 1)) * 100}%`,
+                ...(activeDay > day.dayNumber ? completedDot : {}),
+                ...(activeDay === day.dayNumber ? activeDot : {}),
               }}
             >
               {day.dayNumber}
@@ -159,9 +198,26 @@ export default function TripDetails() {
                 ...(activeDay === day.dayNumber ? activePill : {}),
               }}
             >
+              {activeDay > day.dayNumber
+                ? "✅ "
+                : activeDay === day.dayNumber
+                ? "🟢 "
+                : "⚪ "}
               Day {day.dayNumber}
             </button>
           ))}
+        </div>
+
+        <div style={taskProgressBox}>
+          <div style={progressHeader}>
+            <span>Activity Checklist Progress</span>
+            <strong>
+              {completedActivities}/{totalActivities} Done · {activityProgress}%
+            </strong>
+          </div>
+          <div style={greenBar}>
+            <div style={{ ...greenBarFill, width: `${activityProgress}%` }}></div>
+          </div>
         </div>
       </div>
 
@@ -173,7 +229,8 @@ export default function TripDetails() {
               Your complete {trip.destination} travel plan
             </h2>
             <p style={description}>
-              A clean day-wise journey plan with budget, hotels, packing list and downloadable PDF export.
+              Day-wise journey, smart budget, hotels, packing checklist,
+              activity tracker and PDF export in one premium travel dashboard.
             </p>
           </div>
 
@@ -208,15 +265,6 @@ export default function TripDetails() {
         </div>
 
         <h2 style={sectionTitle}>Packing Checklist</h2>
-        <div style={packingProgress}>
-          <span>Essentials Ready</span>
-          <strong>100%</strong>
-        </div>
-
-        <div style={greenBar}>
-          <div style={greenBarFill}></div>
-        </div>
-
         <div style={grid}>
           {trip.packingList?.map((item, index) => (
             <div key={index} style={packingItem}>
@@ -226,7 +274,7 @@ export default function TripDetails() {
           ))}
         </div>
 
-        <h2 style={sectionTitle}>Day-wise Journey Flow</h2>
+        <h2 style={sectionTitle}>Day-wise Journey Checklist</h2>
 
         <div style={timeline}>
           {trip.itinerary?.map((day) => (
@@ -248,26 +296,59 @@ export default function TripDetails() {
                 <div
                   style={{
                     ...dayBadge,
-                    ...(activeDay >= day.dayNumber ? activeDayBadge : {}),
+                    ...(activeDay > day.dayNumber ? completedBadge : {}),
+                    ...(activeDay === day.dayNumber ? activeBadge : {}),
                   }}
                 >
-                  {activeDay >= day.dayNumber ? "Completed" : "Upcoming"}
+                  {activeDay > day.dayNumber
+                    ? "Completed"
+                    : activeDay === day.dayNumber
+                    ? "Active"
+                    : "Upcoming"}
                 </div>
               </div>
 
               <div style={activityGrid}>
-                {day.activities?.map((activity, index) => (
-                  <div key={index} style={activityCard}>
-                    <div style={activityIcon}>
-                      {activity.timeOfDay === "Morning" ? "🌅" : "🌆"}
+                {day.activities?.map((activity, index) => {
+                  const key = `${day.dayNumber}-${index}`;
+                  const isDone = completed[key];
+
+                  return (
+                    <div
+                      key={index}
+                      style={{
+                        ...activityCard,
+                        ...(isDone ? completedActivity : {}),
+                      }}
+                    >
+                      <label style={checkRow}>
+                        <input
+                          type="checkbox"
+                          checked={!!isDone}
+                          onChange={() =>
+                            toggleActivity(day.dayNumber, index)
+                          }
+                          style={checkbox}
+                        />
+                        <span style={activityIcon}>
+                          {activity.timeOfDay === "Morning" ? "🌅" : "🌆"}
+                        </span>
+                        <div>
+                          <h3
+                            style={{
+                              margin: "0 0 8px",
+                              textDecoration: isDone ? "line-through" : "none",
+                            }}
+                          >
+                            {activity.timeOfDay} - {activity.title}
+                          </h3>
+                          <p style={{ marginTop: 0 }}>{activity.description}</p>
+                          <strong>Cost: ₹{activity.estimatedCost}</strong>
+                        </div>
+                      </label>
                     </div>
-                    <h3>
-                      {activity.timeOfDay} - {activity.title}
-                    </h3>
-                    <p>{activity.description}</p>
-                    <strong>Cost: ₹{activity.estimatedCost}</strong>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           ))}
@@ -311,7 +392,6 @@ const spinner = {
   border: "6px solid #e5e7eb",
   borderTop: "6px solid #16a34a",
   borderRadius: "50%",
-  animation: "spin 1s linear infinite",
 };
 
 const topBar = {
@@ -369,7 +449,7 @@ const downloadBtn = {
 const progressWrapper = {
   maxWidth: "1240px",
   margin: "0 auto 28px",
-  background: "rgba(255,255,255,.86)",
+  background: "rgba(255,255,255,.88)",
   border: "1px solid rgba(226,232,240,.9)",
   borderRadius: "24px",
   padding: "22px",
@@ -384,7 +464,7 @@ const progressHeader = {
   display: "flex",
   justifyContent: "space-between",
   fontWeight: "900",
-  marginBottom: "16px",
+  marginBottom: "14px",
 };
 
 const progressTrack = {
@@ -392,7 +472,7 @@ const progressTrack = {
   background: "#e5e7eb",
   borderRadius: "999px",
   position: "relative",
-  margin: "20px 18px 26px",
+  margin: "28px 28px 32px",
 };
 
 const progressFill = {
@@ -403,21 +483,26 @@ const progressFill = {
 };
 
 const dayDot = {
-  position: "relative",
+  position: "absolute",
   top: "-16px",
-  width: "38px",
-  height: "38px",
+  transform: "translateX(-50%)",
+  width: "40px",
+  height: "40px",
   borderRadius: "50%",
   border: "4px solid white",
   background: "#cbd5e1",
   color: "#111827",
   fontWeight: "900",
   cursor: "pointer",
-  marginRight: "calc((100% - 38px) / 8)",
   boxShadow: "0 8px 18px rgba(15,23,42,.15)",
 };
 
 const activeDot = {
+  background: "#2563eb",
+  color: "white",
+};
+
+const completedDot = {
   background: "#16a34a",
   color: "white",
 };
@@ -430,7 +515,7 @@ const dayNav = {
 };
 
 const dayPill = {
-  minWidth: "92px",
+  minWidth: "110px",
   padding: "12px 16px",
   borderRadius: "999px",
   border: "none",
@@ -443,6 +528,23 @@ const dayPill = {
 const activePill = {
   background: "#111827",
   color: "white",
+};
+
+const taskProgressBox = {
+  marginTop: "18px",
+};
+
+const greenBar = {
+  height: "12px",
+  background: "#e5e7eb",
+  borderRadius: "999px",
+};
+
+const greenBarFill = {
+  height: "100%",
+  background: "linear-gradient(90deg,#22c55e,#16a34a)",
+  borderRadius: "999px",
+  transition: ".3s ease",
 };
 
 const contentCard = {
@@ -464,7 +566,7 @@ const heroCard = {
 
 const sectionTitle = {
   fontSize: "32px",
-  margin: "18px 0",
+  margin: "22px 0",
   color: "#070b14",
 };
 
@@ -493,7 +595,6 @@ const budgetCard = {
   padding: "22px",
   borderRadius: "22px",
   border: "1px solid #dbeafe",
-  transition: ".25s",
 };
 
 const highlightBudget = {
@@ -535,27 +636,6 @@ const tag = {
   fontWeight: "900",
 };
 
-const packingProgress = {
-  display: "flex",
-  justifyContent: "space-between",
-  fontWeight: "900",
-  marginBottom: "10px",
-};
-
-const greenBar = {
-  height: "12px",
-  background: "#e5e7eb",
-  borderRadius: "999px",
-  marginBottom: "20px",
-};
-
-const greenBarFill = {
-  width: "100%",
-  height: "100%",
-  background: "linear-gradient(90deg,#22c55e,#16a34a)",
-  borderRadius: "999px",
-};
-
 const packingItem = {
   background: "#f8fafc",
   border: "1px solid #e5e7eb",
@@ -574,7 +654,7 @@ const timeline = {
 };
 
 const dayCard = {
-  scrollMarginTop: "220px",
+  scrollMarginTop: "240px",
   border: "1px solid #e5e7eb",
   borderRadius: "28px",
   padding: "24px",
@@ -584,9 +664,9 @@ const dayCard = {
 };
 
 const activeDayCard = {
-  border: "2px solid #16a34a",
+  border: "2px solid #2563eb",
   transform: "translateY(-4px)",
-  boxShadow: "0 28px 70px rgba(22,163,74,.18)",
+  boxShadow: "0 28px 70px rgba(37,99,235,.18)",
 };
 
 const dayHead = {
@@ -604,9 +684,14 @@ const dayBadge = {
   fontWeight: "900",
 };
 
-const activeDayBadge = {
+const completedBadge = {
   background: "#dcfce7",
   color: "#166534",
+};
+
+const activeBadge = {
+  background: "#dbeafe",
+  color: "#1d4ed8",
 };
 
 const activityGrid = {
@@ -622,6 +707,26 @@ const activityCard = {
   border: "1px solid #e5e7eb",
 };
 
+const completedActivity = {
+  background: "#ecfdf5",
+  border: "1px solid #bbf7d0",
+};
+
+const checkRow = {
+  display: "grid",
+  gridTemplateColumns: "28px 50px 1fr",
+  gap: "14px",
+  alignItems: "flex-start",
+  cursor: "pointer",
+};
+
+const checkbox = {
+  width: "22px",
+  height: "22px",
+  marginTop: "12px",
+  accentColor: "#16a34a",
+};
+
 const activityIcon = {
   width: "44px",
   height: "44px",
@@ -631,5 +736,4 @@ const activityIcon = {
   justifyContent: "center",
   alignItems: "center",
   fontSize: "24px",
-  marginBottom: "10px",
 };
