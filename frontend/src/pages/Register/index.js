@@ -51,7 +51,7 @@ export default function Register() {
       setLoading(true);
 
       await axios.post(
-        "http://localhost:5000/api/auth/register",
+        "https://naprayanam.onrender.com/api/auth/register",
         {
           name: form.name,
           email: form.email,
